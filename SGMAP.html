@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Title styling with highly decorative fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Allura&family=Dancing+Script:wght@700&family=Pacifico&display=swap');
+        
+        .page-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            font-family: 'Great Vibes', 'Allura', 'Dancing Script', 'Pacifico', 'Brush Script MT', 'Lucida Handwriting', cursive;
+            font-size: 52px;
+            font-weight: 700;
+            color: #2c3e50;
+            font-style: italic;
+            letter-spacing: 2px;
+            text-shadow: 
+                2px 2px 0px #ffffff,
+                -2px -2px 0px #ffffff,
+                2px -2px 0px #ffffff,
+                -2px 2px 0px #ffffff,
+                4px 4px 8px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.9) 100%);
+            padding: 20px 40px;
+            border-radius: 30px;
+            border: 4px solid #34495e;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px);
+            animation: titleGlow 4s ease-in-out infinite alternate;
+            transform: translateX(-50%) rotate(-2deg);
+            transition: all 0.3s ease;
+        }
+        
+        .page-title:hover {
+            transform: translateX(-50%) rotate(0deg) scale(1.05);
+        }
+        
+        @keyframes titleGlow {
+            from {
+                text-shadow: 
+                    2px 2px 0px #ffffff,
+                    -2px -2px 0px #ffffff,
+                    2px -2px 0px #ffffff,
+                    -2px 2px 0px #ffffff,
+                    3px 3px 6px rgba(0,0,0,0.3);
+            }
+            to {
+                text-shadow: 
+                    2px 2px 0px #ffffff,
+                    -2px -2px 0px #ffffff,
+                    2px -2px 0px #ffffff,
+                    -2px 2px 0px #ffffff,
+                    3px 3px 12px rgba(0,0,0,0.5),
+                    0 0 20px rgba(52,73,94,0.4);
+            }
+        }
+        
+        /* Custom popup styling */
+        .custom-popup .leaflet-popup-content-wrapper {
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+            border: 3px solid #fff;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            animation: popupBounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .custom-popup .leaflet-popup-tip {
+            border-top-color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        
+        .custom-popup .leaflet-popup-close-button {
+            font-size: 20px;
+            color: #666;
+            padding: 8px 8px 0 0;
+            font-weight: bold;
+        }
+        
+        .custom-popup .leaflet-popup-close-button:hover {
+            color: #333;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+        }
+        
+        /* Popup animation */
+        @keyframes popupBounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) translateY(-50px);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05) translateY(-10px);
+            }
+            70% {
+                transform: scale(0.98) translateY(0px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0px);
+            }
+        }
+        
+        /* Custom pin marker styling */
+        .custom-pin-marker {
+            cursor: pointer;
+        }
+        
+        .custom-pin-marker svg {
+            transition: all 0.2s ease;
+            display: block;
+            transform-origin: center bottom;
+        }
+        
+        /* Excel file upload interface styling */
+        .excel-upload-panel {
+            position: absolute;
+            top: 120px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 3px solid #34495e;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            max-width: 350px;
+            min-width: 300px;
+        }
+        
+        .excel-upload-panel h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            text-align: center;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #34495e;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input:hover {
+            border-color: #2980b9;
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .file-input input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .upload-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+        
+        .upload-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .upload-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .sample-format {
+            background: rgba(241, 245, 249, 0.9);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .sample-format h4 {
+            margin: 0 0 8px 0;
+            color: #334155;
+            font-size: 14px;
+        }
+        
+        .sample-format code {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        /* Google Sheets status styling */
+        .sheets-status {
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .sheets-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .sheets-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .sheets-status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        /* Data source sections */
+        .data-source-section {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-title">FoodLocker's Galore</div>
+    <div id="map"></div>
+    
+    <!-- Excel Upload Panel -->
+    <div class="excel-upload-panel" id="uploadPanel">
+        <h3>📊 Data Sources</h3>
+        
+        <!-- Google Sheets Section -->
+        <div class="data-source-section">
+            <h4 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 16px;">🔄 Google Sheets (Auto-Sync)</h4>
+            <div class="sheets-input-wrapper">
+                <input type="url" id="googleSheetsUrl" placeholder="Paste Google Sheets URL here..." 
+                       style="width: 100%; padding: 10px; border: 2px solid #34495e; border-radius: 6px; font-size: 12px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <button id="connectSheets" style="flex: 1; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">
+                        🔗 Connect
+                    </button>
+                    <button id="refreshSheets" style="flex: 1; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;" disabled>
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="sheets-status" id="sheetsStatus" style="display: none;"></div>
+            <div class="auto-refresh-toggle" style="margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; font-size: 12px; color: #555;">
+                    <input type="checkbox" id="autoRefresh" style="margin-right: 8px;">
+                    Auto-refresh every 
+                    <select id="refreshInterval" style="margin: 0 4px; padding: 2px;">
+                        <option value="30">30 sec</option>
+                        <option value="60" selected>1 min</option>
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+        
+        <hr style="border: 1px solid #ecf0f1; margin: 15px 0;">
+        
+        <!-- Manual Upload Section -->
+        <div class="data-source-section">
+            <h4 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 16px;">📁 Manual Upload</h4>
+            <div class="file-input-wrapper">
+                <label for="excelFile" class="file-input">
+                    <span id="fileLabel">Choose Excel File (.xlsx/.xls)</span>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+                </label>
+            </div>
+        </div>
+        
+        <div class="upload-status" id="uploadStatus"></div>
+        
+        <div class="sample-format">
+            <h4>Required Data Format:</h4>
+            <div style="font-family: monospace; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px; margin: 8px 0;">
+                <div style="font-weight: bold; color: #2c3e50;">New Format (Recommended):</div>
+                <code>Lat and Long</code> | <code>Locker ID</code> | <code>Locker Name</code> | <code>Type</code>
+            </div>
+            <div style="font-family: monospace; font-size: 11px; background: rgba(248,249,250,0.8); padding: 6px; border-radius: 3px; margin-bottom: 8px;">
+                <strong>Example:</strong> "1.29175, 103.79296" | "SG000001" | "OneNorth Food Locker" | "commercial"
+            </div>
+            <div style="margin-top: 6px; font-size: 11px;">
+                <strong>Types:</strong> commercial, university, hospital, hotel, residence, others
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #7f8c8d;">
+                💡 <strong>Google Sheets Setup:</strong><br>
+                1. Publish sheet → Share → "Anyone with link can view"<br>
+                2. Copy URL and paste above<br>
+                3. Old format (lat | lng | title | name | type) still supported
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <!-- SheetJS for Excel file reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script>
+        // Initialize the map centered on Singapore
+        const map = L.map('map').setView([1.3521, 103.8198], 11);
+        
+        // Add CartoDB Positron tiles for a clean, cartoony look
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Define locker type colors
+        const lockerTypeColors = {
+            commercial: '#2C2C2C',        // Black for Commercial office building
+            university: '#40E0D0',        // Turquoise for University/Schools
+            hospital: '#FF0000',          // Red for Hospital
+            hotel: '#FF8C42',             // Orange for Hotel  
+            residence: '#96CEB4',         // Green for Residence building (unchanged)
+            others: '#9B59B6'             // Purple for Others (unchanged)
+        };
+        
+        // Global variables for location data
+        let locationsByLockerType = {};
+        let currentMarkers = [];
+        
+        // Default/Sample locations (used as fallback)
+        const sampleLocationsByLockerType = {
+            // COMMERCIAL OFFICE BUILDING (4 locations)
+            commercial: [
+                { lat: 1.29175, lng: 103.79296, title: "SG000002", name: "Grab OneNorth Food locker", type: "commercial" },
+                { lat: 1.3252736, lng: 103.8726764, title: "SG000007", name: "Main Lobby, SP Group Building GrabFood Locker (SP Group)", type: "commercial" },
+                { lat: 1.3434734616895827, lng: 103.94168403417642, title: "SG000014", name: "Yo HA Tampines GrabFood Locker", type: "commercial" },
+                { lat: 1.275111, lng: 103.79925, title: "SG000024", name: "Mapletree Business City GrabFood Locker", type: "commercial" }
+            ],
+            
+            // UNIVERSITY/SCHOOLS (6 locations)
+            university: [
+                { lat: 1.3421398956046862, lng: 103.96414592019806, title: "SG000004", name: "SUTD (Blk 57) Parcel Collection Point (Food Locker)", type: "university" },
+                { lat: 1.2915161958698036, lng: 103.77574059755193, title: "SG000012", name: "Sheares Hall NUS GrabFood Locker", type: "university" },
+                { lat: 1.2918556047386147, lng: 103.77467062366213, title: "SG000011", name: "Kent Ridge Hall GrabFood Locker", type: "university" },
+                { lat: 1.3451346710891556, lng: 103.9355273257296, title: "SG000006", name: "GrabFood Locker, Temasek Polytechnic (East Wing Blk 1A)", type: "university" },
+                { lat: 1.3082410077975994, lng: 103.77360151106602, title: "SG000028", name: "Residential College 4 GrabFood Locker", type: "university" },
+                { lat: 1.307646330127327, lng: 103.77314945993616, title: "SG000029", name: "College of Alice & Peter Tan GrabFood Locker", type: "university" }
+            ],
+            
+            // HOSPITAL (9 locations)
+            hospital: [
+                { lat: 1.31056, lng: 103.84746, title: "SG000005", name: "GrabFood Locker, KKH Women's Tower B1", type: "hospital" },
+                { lat: 1.33397385662718, lng: 103.74543720927994, title: "SG000013", name: "NTFGH Tower GrabFood Locker", type: "hospital" },
+                { lat: 1.3210704100225947, lng: 103.8462317270159, title: "SG000015", name: "Tan Tock Seng Hospital B1 GrabFood Locker", type: "hospital" },
+                { lat: 1.3232169467030301, lng: 103.84662869396264, title: "SG000010", name: "TTSH Integrated Care Hub Grabfood Locker", type: "hospital" },
+                { lat: 1.3819388971607196, lng: 103.88374276326645, title: "SG000048", name: "IMH GrabFood Locker", type: "hospital" },
+                { lat: 1.293748855089805, lng: 103.78341940692698, title: "SG000016", name: "NUH GrabFood Locker", type: "hospital" },
+                { lat: 1.2799816536476223, lng: 103.83535761916224, title: "SG000025", name: "GrabFood Locker, Blk 4 SGH", type: "hospital" },
+                { lat: 1.341067670303275, lng: 103.94915314956955, title: "SG000018", name: "GrabFood Locker, CGH", type: "hospital" },
+                { lat: 1.395752597714859, lng: 103.8929892977819, title: "SG000021", name: "SKH GrabFood Locker", type: "hospital" }
+            ],
+            
+            // HOTEL (2 locations)
+            hotel: [
+                { lat: 1.2661858249429627, lng: 103.82376326622236, title: "SG000023", name: "Travelodge GrabFood Locker", type: "hotel" },
+                { lat: 1.3008744193783386, lng: 103.78808845301546, title: "SG000027", name: "Lyf One-North Singapore GrabFood Locker", type: "hotel" }
+            ],
+            
+            // RESIDENCE BUILDING (17 locations)
+            residence: [
+                { lat: 1.3194994525809194, lng: 103.75390754747973, title: "SG000026", name: "Whistler Grand GrabFood Locker", type: "residence" },
+                { lat: 1.342895187355576, lng: 103.71836978745797, title: "SG000019", name: "Caspian GrabFood Locker", type: "residence" },
+                { lat: 1.3272435439915469, lng: 103.90692116405637, title: "SG000020", name: "euHabitat GrabFood Locker", type: "residence" },
+                { lat: 1.3812836482021331, lng: 103.90264168058447, title: "SG000022", name: "Riversound Residence GrabFood Locker", type: "residence" },
+                { lat: 1.4443203888625107, lng: 103.81986210785803, title: "SG000039", name: "SkyPark Residences GrabFood Locker", type: "residence" },
+                { lat: 1.3926021687657006, lng: 103.87937227252328, title: "SG000032", name: "H2O Residences GrabFood Locker", type: "residence" },
+                { lat: 1.376029306567344, lng: 103.84692069214647, title: "SG000017", name: "Grandeur 8 GrabFood Locker", type: "residence" },
+                { lat: 1.399100915883231, lng: 103.8911710295785, title: "SG000033", name: "Bellewaters GrabFood Locker", type: "residence" },
+                { lat: 1.3017247110916408, lng: 103.89842785937552, title: "SG000030", name: "One Amber GrabFood Locker", type: "residence" },
+                { lat: 1.3756159308038363, lng: 103.90266139656705, title: "SG000034", name: "Boathouse Residences GrabFood Locker", type: "residence" },
+                { lat: 1.3522732418250638, lng: 103.85071886026238, title: "SG000041", name: "Sky Vue GrabFood Locker", type: "residence" },
+                { lat: 1.2951984743262237, lng: 103.80645062184685, title: "SG000036", name: "Commonwealth Towers GrabFood Locker", type: "residence" },
+                { lat: 1.3386725359513727, lng: 103.9190970679817, title: "SG000035", name: "Archipelago GrabFood Locker", type: "residence" },
+                { lat: 1.319617964747989, lng: 103.75251816995362, title: "SG000031", name: "Twin Vew GrabFood Locker", type: "residence" },
+                { lat: 1.4128475848730648, lng: 103.83557991581378, title: "SG000040", name: "Orchid Park GrabFood Locker", type: "residence" },
+                { lat: 1.3428296964441082, lng: 103.88151294788388, title: "SG000037", name: "Bartley Residences GrabFood Locker", type: "residence" },
+                { lat: 1.4438018250683171, lng: 103.81032592373535, title: "SG000042", name: "Northwave GrabFood Locker", type: "residence" }
+            ],
+            
+            // OTHERS (1 location)
+            others: [
+                { lat: 1.4030529146729824, lng: 103.742610647721, title: "SG000044", name: "Kranji Camp III GrabFood Locker", type: "others" }
+            ]
+        };
+        
+        // Create custom pin marker function
+        function createPinMarker(color) {
+            const pinSvg = `
+                <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#00000050"/>
+                        </filter>
+                    </defs>
+                    <!-- Pin shape -->
+                    <path d="M15 2 C8.5 2 3 7.5 3 14 C3 22 15 38 15 38 S27 22 27 14 C27 7.5 21.5 2 15 2 Z" 
+                          fill="${color}" 
+                          stroke="white" 
+                          stroke-width="2" 
+                          filter="url(#drop-shadow)"/>
+                    <!-- Inner white circle -->
+                    <circle cx="15" cy="14" r="6" fill="white" stroke="${color}" stroke-width="1.5"/>
+                </svg>
+            `;
+            
+            return L.divIcon({
+                html: pinSvg,
+                className: 'custom-pin-marker',
+                iconSize: [30, 40],
+                iconAnchor: [15, 38], // Pin tip position (center-x, bottom-y)
+                popupAnchor: [0, -38]
+            });
+        }
+        
+        // Function to clear all markers from the map
+        function clearAllMarkers() {
+            currentMarkers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            currentMarkers = [];
+            clearCallout();
+            window.activeMarker = null;
+        }
+        
+        // Function to get display type for legend and UI
+        function getDisplayType(type) {
+            const typeMap = {
+                'commercial': 'Commercial Office Building',
+                'university': 'University/Schools', 
+                'hospital': 'Hospital',
+                'hotel': 'Hotel',
+                'residence': 'Residence Building',
+                'others': 'Others'
+            };
+            return typeMap[type] || type;
+        }
+        
+        // Function to add markers to the map
+        function addMarkersToMap(data) {
+            clearAllMarkers();
+            
+            Object.keys(data).forEach(lockerType => {
+                const locations = data[lockerType];
+                const color = lockerTypeColors[lockerType];
+                
+                if (!color) {
+                    console.warn(`Unknown locker type: ${lockerType}`);
+                    return;
+                }
+                
+                locations.forEach((location, index) => {
+                    // Create pin marker
+                    const marker = L.marker([location.lat, location.lng], {
+                        icon: createPinMarker(color)
+                    }).addTo(map);
+                    
+                    currentMarkers.push(marker);
+                    
+                    // Add click event for zoom and enhanced interaction
+                    marker.on('click', function(e) {
+                        // Clear any existing callout
+                        clearCallout();
+                        
+                        // Store the current active marker
+                        window.activeMarker = {
+                            marker: this,
+                            location: location,
+                            color: color
+                        };
+                        
+                        // Smooth zoom to the marker location
+                        map.flyTo([location.lat, location.lng], Math.max(16, map.getZoom()), {
+                            animate: true,
+                            duration: 1.2,
+                            easeLinearity: 0.25
+                        });
+                        
+                        // Add scaling effect to the clicked marker
+                        const icon = this.getElement();
+                        const svg = icon ? icon.querySelector('svg') : null;
+                        if (svg) {
+                            svg.style.transform = 'scale(1.3)';
+                            svg.style.transition = 'transform 0.3s ease';
+                            icon.style.zIndex = '1000';
+                        }
+                        
+                        // Reset marker style and show callout after animation
+                        setTimeout(() => {
+                            if (svg) {
+                                svg.style.transform = 'scale(1)';
+                            }
+                            if (icon) {
+                                icon.style.zIndex = '';
+                            }
+                            
+                            // Show callout if still zoomed in above original level
+                            if (map.getZoom() > 11) {
+                                showCallout(location, color);
+                            }
+                        }, 1500);
+                    });
+                    
+                    // Add hover effects for pin markers
+                    marker.on('mouseover', function() {
+                        const icon = this.getElement();
+                        const svg = icon ? icon.querySelector('svg') : null;
+                        if (svg) {
+                            svg.style.transform = 'scale(1.1)';
+                            svg.style.transition = 'transform 0.2s ease';
+                            svg.style.filter = 'brightness(1.1) drop-shadow(0 0 8px rgba(0,0,0,0.5))';
+                        }
+                    });
+                    
+                    marker.on('mouseout', function() {
+                        const icon = this.getElement();
+                        const svg = icon ? icon.querySelector('svg') : null;
+                        if (svg && (!window.activeMarker || window.activeMarker.marker !== this)) {
+                            svg.style.transform = 'scale(1)';
+                            svg.style.filter = '';
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Global variables for callout
+        let calloutLine = null;
+        let calloutBox = null;
+        
+        // Function to show callout line and details box
+        function showCallout(location, color) {
+            clearCallout(); // Clear any existing callout
+            
+            const zoom = map.getZoom();
+            if (zoom <= 11) return; // Only show above original zoom level
+            
+            // Get the marker's screen position
+            const markerPoint = map.latLngToContainerPoint([location.lat, location.lng]);
+            const mapSize = map.getSize();
+            
+            // Calculate line end point at 50 degrees (slanted up and to the right)
+            const lineLength = 120; // pixels
+            const angle = 50 * Math.PI / 180; // Convert 50 degrees to radians
+            
+            const deltaX = lineLength * Math.cos(angle);
+            const deltaY = -lineLength * Math.sin(angle); // Negative because screen Y increases downward
+            
+            const lineEndX = markerPoint.x + deltaX;
+            const lineEndY = markerPoint.y + deltaY;
+            
+            // Ensure the end point stays within screen bounds
+            const clampedEndX = Math.min(Math.max(lineEndX, 20), mapSize.x - 300); // Leave space for details box
+            const clampedEndY = Math.max(lineEndY, 20); // Don't go above screen
+            
+            const lineEndLatLng = map.containerPointToLatLng([clampedEndX, clampedEndY]);
+            
+            // Create the callout line
+            calloutLine = L.polyline([
+                [location.lat, location.lng],
+                [lineEndLatLng.lat, lineEndLatLng.lng]
+            ], {
+                color: color,
+                weight: 2,
+                opacity: 0.8,
+                dashArray: '5, 5'
+            }).addTo(map);
+            
+            // Create the details box
+            const boxContent = `
+                <div style="
+                    background: rgba(255, 255, 255, 0.95);
+                    border: 2px solid ${color};
+                    border-radius: 8px;
+                    padding: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    font-family: Arial, sans-serif;
+                    min-width: 200px;
+                    max-width: 280px;
+                    backdrop-filter: blur(5px);
+                ">
+                    <div style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 8px;">${location.title}</div>
+                    <div style="font-size: 13px; color: #555; margin-bottom: 8px; line-height: 1.4;">${location.name}</div>
+                    <div style="
+                        color: ${color}; 
+                        font-weight: bold; 
+                        font-size: 11px; 
+                        text-transform: uppercase;
+                        background: rgba(255,255,255,0.8);
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        border: 1px solid ${color};
+                        display: inline-block;
+                        margin-bottom: 6px;
+                    ">${getDisplayType(location.type)}</div>
+                    <div style="font-size: 10px; color: #888; padding-top: 6px; border-top: 1px solid #eee;">
+                        📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
+                    </div>
+                </div>
+            `;
+            
+            calloutBox = L.marker([lineEndLatLng.lat, lineEndLatLng.lng], {
+                icon: L.divIcon({
+                    html: boxContent,
+                    className: 'callout-box',
+                    iconSize: [280, 120],
+                    iconAnchor: [0, 60]
+                })
+            }).addTo(map);
+        }
+        
+        // Function to clear callout
+        function clearCallout() {
+            if (calloutLine) {
+                map.removeLayer(calloutLine);
+                calloutLine = null;
+            }
+            if (calloutBox) {
+                map.removeLayer(calloutBox);
+                calloutBox = null;
+            }
+        }
+        
+        // Handle callout persistence during zoom
+        map.on('zoomend', function() {
+            const zoom = map.getZoom();
+            if (zoom > 11 && window.activeMarker) {
+                // Recreate callout for active marker if zoomed in above original level
+                setTimeout(() => {
+                    showCallout(window.activeMarker.location, window.activeMarker.color);
+                }, 300);
+            } else if (zoom <= 11) {
+                // Clear callout if zoomed out to original level or below
+                clearCallout();
+                window.activeMarker = null;
+            }
+        });
+        
+        // Clear callout when clicking on map (not on marker)
+        map.on('click', function(e) {
+            if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
+                clearCallout();
+                window.activeMarker = null;
+            }
+        });
+        
+        // Google Sheets integration
+        let currentSheetsUrl = '';
+        let autoRefreshTimer = null;
+        let lastSuccessfulData = null;
+        
+        function convertToCSVUrl(googleSheetsUrl) {
+            // Extract sheet ID from various Google Sheets URL formats
+            let sheetId = '';
+            
+            // Handle different URL formats
+            if (googleSheetsUrl.includes('/d/')) {
+                sheetId = googleSheetsUrl.split('/d/')[1].split('/')[0];
+            } else if (googleSheetsUrl.includes('key=')) {
+                sheetId = googleSheetsUrl.split('key=')[1].split('&')[0];
+            }
+            
+            if (!sheetId) {
+                throw new Error('Invalid Google Sheets URL format');
+            }
+            
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+        }
+        
+        function showSheetsStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('sheetsStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `sheets-status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        function hideSheetsStatus() {
+            document.getElementById('sheetsStatus').style.display = 'none';
+        }
+        
+        function parseCSVData(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            if (lines.length <= 1) return [];
+            
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                // Handle CSV parsing more carefully to avoid splitting coordinates
+                const row = {};
+                const line = lines[i];
+                
+                // Simple CSV parsing - can be improved for more complex cases
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim().replace(/"/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim().replace(/"/g, ''));
+                
+                // Map values to headers
+                headers.forEach((header, index) => {
+                    row[header] = values[index] || '';
+                });
+                
+                data.push(row);
+            }
+            
+            return data;
+        }
+        
+        async function fetchGoogleSheetsData(url) {
+            try {
+                showSheetsStatus('Connecting to Google Sheets...', 'loading');
+                
+                const csvUrl = convertToCSVUrl(url);
+                const response = await fetch(csvUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: Unable to access sheet. Make sure it's published and shared publicly.`);
+                }
+                
+                const csvText = await response.text();
+                if (!csvText.trim()) {
+                    throw new Error('Empty response from Google Sheets');
+                }
+                
+                const data = parseCSVData(csvText);
+                const parsedData = parseExcelData(data);
+                const totalLocations = Object.values(parsedData).flat().length;
+                
+                if (totalLocations === 0) {
+                    throw new Error('No valid location data found in sheet');
+                }
+                
+                // Update map
+                locationsByLockerType = parsedData;
+                addMarkersToMap(locationsByLockerType);
+                updateLegendCounts();
+                
+                // Store successful data as backup
+                lastSuccessfulData = parsedData;
+                
+                showSheetsStatus(`✅ Connected! ${totalLocations} locations loaded`, 'connected');
+                
+                // Enable refresh button
+                document.getElementById('refreshSheets').disabled = false;
+                
+                return parsedData;
+                
+            } catch (error) {
+                console.error('Google Sheets error:', error);
+                showSheetsStatus(`❌ ${error.message}`, 'error');
+                
+                // Revert to last successful data if available
+                if (lastSuccessfulData) {
+                    locationsByLockerType = lastSuccessfulData;
+                    addMarkersToMap(locationsByLockerType);
+                    updateLegendCounts();
+                }
+                
+                throw error;
+            }
+        }
+        
+        function startAutoRefresh() {
+            const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+            
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+            }
+            
+            if (currentSheetsUrl) {
+                autoRefreshTimer = setInterval(async () => {
+                    try {
+                        await fetchGoogleSheetsData(currentSheetsUrl);
+                        console.log('Auto-refresh completed');
+                    } catch (error) {
+                        console.log('Auto-refresh failed:', error.message);
+                    }
+                }, interval);
+                
+                console.log(`Auto-refresh started: every ${interval/1000} seconds`);
+            }
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+                console.log('Auto-refresh stopped');
+            }
+        }
+        
+        // Excel processing functions
+        function parseExcelData(data) {
+            const locations = {
+                commercial: [],
+                university: [],
+                hospital: [],
+                hotel: [],
+                residence: [],
+                others: []
+            };
+            
+            data.forEach((row, index) => {
+                try {
+                    let lat, lng, title, name, type;
+                    
+                    // Handle new Google Sheets format with combined Lat and Long
+                    if (row['Lat and Long'] || row['lat and long']) {
+                        const coordsField = row['Lat and Long'] || row['lat and long'];
+                        const coords = coordsField.split(',').map(c => c.trim());
+                        
+                        if (coords.length !== 2) {
+                            console.warn(`Row ${index + 1} skipped: invalid coordinate format "${coordsField}"`);
+                            return;
+                        }
+                        
+                        lat = parseFloat(coords[0]);
+                        lng = parseFloat(coords[1]);
+                        title = String(row['Locker ID'] || row['locker id'] || '').trim();
+                        name = String(row['Locker Name'] || row['locker name'] || '').trim();
+                        type = String(row['Type'] || row['type'] || 'others').toLowerCase().trim();
+                    }
+                    // Handle old format for backward compatibility
+                    else if (row.lat && row.lng) {
+                        lat = parseFloat(row.lat);
+                        lng = parseFloat(row.lng);
+                        title = String(row.title || '').trim();
+                        name = String(row.name || '').trim();
+                        type = String(row.type || 'others').toLowerCase().trim();
+                    }
+                    // Skip if no coordinate data found
+                    else {
+                        if (index > 0) { // Don't warn for header row
+                            console.warn(`Row ${index + 1} skipped: no coordinate data found`);
+                        }
+                        return;
+                    }
+                    
+                    // Validate parsed data
+                    if (isNaN(lat) || isNaN(lng) || !title || !name) {
+                        console.warn(`Row ${index + 1} skipped: missing or invalid data - lat:${lat}, lng:${lng}, title:"${title}", name:"${name}"`);
+                        return;
+                    }
+                    
+                    // Map type to correct category
+                    let lockerType = type;
+                    if (!locations.hasOwnProperty(lockerType)) {
+                        console.warn(`Row ${index + 1}: Unknown type "${type}", using "others"`);
+                        lockerType = 'others';
+                    }
+                    
+                    locations[lockerType].push({
+                        lat: lat,
+                        lng: lng,
+                        title: title,
+                        name: name,
+                        type: lockerType
+                    });
+                    
+                } catch (error) {
+                    console.error(`Error processing row ${index + 1}:`, error);
+                }
+            });
+            
+            return locations;
+        }
+        
+        function showUploadStatus(message, isError = false) {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `upload-status ${isError ? 'error' : 'success'}`;
+            statusDiv.style.display = 'block';
+            
+            // Hide status after 5 seconds for success messages
+            if (!isError) {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function updateLegendCounts() {
+            const legend = document.querySelector('.legend');
+            if (!legend) return;
+            
+            // Update total count
+            const totalCount = Object.values(locationsByLockerType).flat().length;
+            const totalSpan = legend.querySelector('.total-count');
+            if (totalSpan) {
+                totalSpan.textContent = totalCount;
+            }
+            
+            // Update individual counts
+            Object.keys(lockerTypeColors).forEach(lockerType => {
+                const count = locationsByLockerType[lockerType] ? locationsByLockerType[lockerType].length : 0;
+                const span = legend.querySelector(`[data-type="${lockerType}"] .count`);
+                if (span) {
+                    span.textContent = count;
+                }
+            });
+        }
+        
+        // File upload and Google Sheets event handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('excelFile');
+            const fileLabel = document.getElementById('fileLabel');
+            const connectSheetsBtn = document.getElementById('connectSheets');
+            const refreshSheetsBtn = document.getElementById('refreshSheets');
+            const googleSheetsUrlInput = document.getElementById('googleSheetsUrl');
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+            const refreshIntervalSelect = document.getElementById('refreshInterval');
+            
+            // File upload handler
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                fileLabel.textContent = `📁 ${file.name}`;
+                showUploadStatus('Processing file...', false);
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        
+                        // Get first worksheet
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convert to JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        if (jsonData.length === 0) {
+                            showUploadStatus('Excel file appears to be empty!', true);
+                            return;
+                        }
+                        
+                        // Parse and validate data
+                        const parsedData = parseExcelData(jsonData);
+                        const totalLocations = Object.values(parsedData).flat().length;
+                        
+                        if (totalLocations === 0) {
+                            showUploadStatus('No valid location data found in Excel file!', true);
+                            return;
+                        }
+                        
+                        // Update global data and refresh map
+                        locationsByLockerType = parsedData;
+                        addMarkersToMap(locationsByLockerType);
+                        updateLegendCounts();
+                        
+                        showUploadStatus(`Successfully loaded ${totalLocations} locations from Excel!`);
+                        
+                        console.log('Excel data loaded:', parsedData);
+                        
+                        // Stop Google Sheets auto-refresh when manual file is loaded
+                        stopAutoRefresh();
+                        autoRefreshCheckbox.checked = false;
+                        currentSheetsUrl = '';
+                        hideSheetsStatus();
+                        
+                    } catch (error) {
+                        console.error('Error reading Excel file:', error);
+                        showUploadStatus('Error reading Excel file. Please check format!', true);
+                    }
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+            
+            // Google Sheets connect button
+            connectSheetsBtn.addEventListener('click', async function() {
+                const url = googleSheetsUrlInput.value.trim();
+                if (!url) {
+                    showSheetsStatus('Please enter a Google Sheets URL', 'error');
+                    return;
+                }
+                
+                try {
+                    currentSheetsUrl = url;
+                    await fetchGoogleSheetsData(url);
+                    
+                    // Clear any manual upload status
+                    document.getElementById('uploadStatus').style.display = 'none';
+                    
+                } catch (error) {
+                    currentSheetsUrl = '';
+                    document.getElementById('refreshSheets').disabled = true;
+                }
+            });
+            
+            // Google Sheets refresh button
+            refreshSheetsBtn.addEventListener('click', async function() {
+                if (currentSheetsUrl) {
+                    await fetchGoogleSheetsData(currentSheetsUrl);
+                }
+            });
+            
+            // Auto-refresh checkbox
+            autoRefreshCheckbox.addEventListener('change', function() {
+                if (this.checked && currentSheetsUrl) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            // Refresh interval change
+            refreshIntervalSelect.addEventListener('change', function() {
+                if (autoRefreshCheckbox.checked && currentSheetsUrl) {
+                    startAutoRefresh(); // Restart with new interval
+                }
+            });
+            
+            // Enter key on URL input
+            googleSheetsUrlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    connectSheetsBtn.click();
+                }
+            });
+        });
+        
+        // Add legend
+        const legend = L.control({position: 'bottomright'});
+        
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            div.style.backgroundColor = 'white';
+            div.style.padding = '10px';
+            div.style.borderRadius = '8px';
+            div.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+            
+            // Calculate total count
+            const totalCount = Object.values(locationsByLockerType).flat().length;
+            
+            div.innerHTML = `
+                <h4 style="text-decoration: underline; margin-bottom: 12px; text-align: center;">Locker Types</h4>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; text-align: center; font-weight: bold; font-size: 14px;">
+                    📍 Total Lockers: <span class="total-count">${totalCount}</span>
+                </div>
+            `;
+            
+            Object.keys(lockerTypeColors).forEach(lockerType => {
+                const count = locationsByLockerType[lockerType] ? locationsByLockerType[lockerType].length : 0;
+                div.innerHTML += 
+                    `<div style="margin: 8px 0;" data-type="${lockerType}">
+                        <span style="display: inline-block; width: 20px; height: 20px; background-color: ${lockerTypeColors[lockerType]}; border-radius: 50%; border: 2px solid white; margin-right: 8px; vertical-align: middle;"></span>
+                        <span style="font-weight: bold; color: ${lockerTypeColors[lockerType]};">${getDisplayType(lockerType)} (<span class="count">${count}</span>)</span>
+                    </div>`;
+            });
+            
+            return div;
+        };
+        
+        legend.addTo(map);
+        
+        // Add reset view button (positioned in top-right corner)
+        const resetButton = L.control({position: 'topright'});
+        
+        resetButton.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'reset-button');
+            div.innerHTML = `
+                <button style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    font-size: 14px;
+                " 
+                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.3)';"
+                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+                onclick="resetMapView()">
+                    🗺️ Reset View
+                </button>
+            `;
+            return div;
+        };
+        
+        resetButton.addTo(map);
+        
+        // Function to reset map view
+        window.resetMapView = function() {
+            clearCallout();
+            window.activeMarker = null;
+            map.flyTo([1.3521, 103.8198], 11, {
+                animate: true,
+                duration: 1.5,
+                easeLinearity: 0.25
+            });
+            map.closePopup();
+        };
+        
+        // Initialize map with sample data
+        locationsByLockerType = sampleLocationsByLockerType;
+        addMarkersToMap(locationsByLockerType);
+        updateLegendCounts();
+        
+        console.log('Map loaded successfully with', 
+                   Object.values(locationsByLockerType).flat().length, 'markers by locker type');
+        console.log('Ready to load Excel data! Use the upload panel on the right.');
+    </script>
+</body>
+</html>
